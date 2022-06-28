@@ -1,0 +1,4 @@
+tqdm
+pandas
+selenium
+python-chromedriver-binary=103.0.5060.53
