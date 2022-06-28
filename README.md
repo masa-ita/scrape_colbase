@@ -22,4 +22,4 @@ pip install chromedriver-binary==103.0.5060.53.0
 
 ## How to use
 
-python scrape_colbase.py --keyword <keyword> --output_dir <output directory>
+python scrape_colbase.py --keyword \<keyword> --output_dir \<output directory>
