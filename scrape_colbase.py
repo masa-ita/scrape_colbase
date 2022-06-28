@@ -20,10 +20,10 @@ def remove_html_tags(text):
 
 def extract_from_table(table):
     dict = {}
-    rows = table.find_elements_by_tag_name("tr")
+    rows = table.find_elements(By.TAG_NAME, "tr")
     for row in rows:
-        key = row.find_element_by_tag_name("th").text
-        value = row.find_element_by_tag_name("td").text
+        key = row.find_element(By.TAG_NAME, "th").text
+        value = row.find_element(By.TAG_NAME, "td").text
         dict[key] = remove_html_tags(value).replace("\n", " ")
     return dict
 
@@ -64,17 +64,17 @@ def get_url_list(driver, keyword):
     url_list = []
     more = True
     while(more):
-        ul_items = driver.find_element_by_xpath("//div[@class='item-list show']/ul")
-        list_items = ul_items.find_elements_by_class_name("item")
+        ul_items = driver.find_element(By.XPATH, "//div[@class='item-list show']/ul")
+        list_items = ul_items.find_elements(By.CLASS_NAME, "item")
         for item in list_items:
-            item_anchor = item.find_element_by_tag_name("a")
+            item_anchor = item.find_element(By.TAG_NAME, "a")
             url = item_anchor.get_attribute("href")
             url_list.append(url)
             
-        next = driver.find_elements_by_class_name("next")
+        next = driver.find_elements(By.CLASS_NAME, "next")
         if next:
             more = True
-            next[0].find_element_by_tag_name("button").click()
+            next[0].find_element(By.TAG_NAME, "button").click()
             time.sleep(3)
         else:
             more = False
@@ -92,12 +92,12 @@ def download_files(driver, output_dir, url_list):
         driver.get(url)
         time.sleep(3)
         orgnanization = url.split("/")[4]
-        name = driver.find_element_by_class_name("item-main").find_element_by_tag_name("h1").text
-        descriptions = driver.find_elements_by_class_name("work-detail-text")
-        table = driver.find_element_by_xpath("//div[@class='work-detail work-detail-info']/table")
+        name = driver.find_element(By.XPATH, "//div[@class='item-main']/h1").text
+        descriptions = driver.find_elements(By.CLASS_NAME, "work-detail-text")
+        table = driver.find_element(By.XPATH, "//div[@class='work-detail work-detail-info']/table")
         data = extract_from_table(table)
-        download_div = driver.find_element_by_class_name("work-detail-download")
-        download_url = download_div.find_element_by_class_name("link-box").get_attribute("href")
+        download_div = driver.find_element(By.CLASS_NAME, "work-detail-download")
+        download_url = download_div.find_element(By.CLASS_NAME, "link-box").get_attribute("href")
         data["機関名"] = orgnanization
         data["名称"] = name.replace("\n", " ")
         data["説明"] = " ".join([desc.text.replace("\n", " ") for desc in  descriptions])
