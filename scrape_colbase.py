@@ -64,8 +64,10 @@ def get_url_list(driver, keyword):
     url_list = []
     more = True
     while(more):
-        ul_items = driver.find_element(By.XPATH, "//div[@class='item-list show']/ul")
-        list_items = ul_items.find_elements(By.CLASS_NAME, "item")
+        ul_items = driver.find_elements(By.XPATH, "//div[@class='item-list show']/ul")
+        if ul_items == []:
+            break
+        list_items = ul_items[0].find_elements(By.CLASS_NAME, "item")
         for item in list_items:
             item_anchor = item.find_element(By.TAG_NAME, "a")
             url = item_anchor.get_attribute("href")
@@ -82,31 +84,39 @@ def get_url_list(driver, keyword):
     return url_list
 
 
-def download_files(driver, output_dir, url_list):
+def download_files(driver, output_dir, url_list, tk_count_var=None, tk_text=None):
     os.makedirs(output_dir, exist_ok= True)
     df = pd.DataFrame(columns=['機関名', '機関管理番号', '名称', '説明', '種別',
                             '文化財指定', '員数', '作者', '時代世紀', '制作地', '出土地', 
                             '品質形状', '法量', '銘文等', '寄贈者', '所蔵者', '分類', 'URL'])
 
-    for url in tqdm(url_list):
-        driver.get(url)
-        time.sleep(3)
-        orgnanization = url.split("/")[4]
-        name = driver.find_element(By.XPATH, "//div[@class='item-main']/h1").text
-        descriptions = driver.find_elements(By.CLASS_NAME, "work-detail-text")
-        table = driver.find_element(By.XPATH, "//div[@class='work-detail work-detail-info']/table")
-        data = extract_from_table(table)
-        download_div = driver.find_element(By.CLASS_NAME, "work-detail-download")
-        download_url = download_div.find_element(By.CLASS_NAME, "link-box").get_attribute("href")
-        data["機関名"] = orgnanization
-        data["名称"] = name.replace("\n", " ")
-        data["説明"] = " ".join([desc.text.replace("\n", " ") for desc in  descriptions])
-        data["URL"] = url
-        output_path = os.path.join(output_dir, data["機関名"], data["機関管理番号"])
-        get_zip_and_extract_all(download_url, output_path)
-        new_df = pd.DataFrame(data, index=[0])
-        df = pd.concat([df, new_df], ignore_index=True)
-        
+    try:
+        for count, url in enumerate(url_list):
+            driver.get(url)
+            time.sleep(3)
+            orgnanization = url.split("/")[4]
+            name = driver.find_element(By.XPATH, "//div[@class='item-main']/h1").text
+            descriptions = driver.find_elements(By.CLASS_NAME, "work-detail-text")
+            table = driver.find_element(By.XPATH, "//div[@class='work-detail work-detail-info']/table")
+            data = extract_from_table(table)
+            download_div = driver.find_element(By.CLASS_NAME, "work-detail-download")
+            download_url = download_div.find_element(By.CLASS_NAME, "link-box").get_attribute("href")
+            data["機関名"] = orgnanization
+            data["名称"] = name.replace("\n", " ")
+            if tk_text:
+                tk_text.insert("end", "{}/{}:{}\n".format(count+1, len(url_list), data["名称"]))
+            data["説明"] = " ".join([desc.text.replace("\n", " ") for desc in  descriptions])
+            data["URL"] = url
+            output_path = os.path.join(output_dir, data["機関名"], data["機関管理番号"])
+            get_zip_and_extract_all(download_url, output_path)
+            new_df = pd.DataFrame(data, index=[0])
+            df = pd.concat([df, new_df], ignore_index=True)
+            if tk_count_var:
+                tk_count_var.set(count+1)
+    except Exception as e:
+        print(e)
+    finally:
+        driver.close()        
     csv_path = os.path.join(output_dir, "download_list.csv")
     df.to_csv(csv_path, index=False, encoding="utf_8_sig")
 
