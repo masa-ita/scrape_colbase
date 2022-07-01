@@ -29,7 +29,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title('Colbase検索・一括ダウンロードプログラム（Chrome バージョン103.0.5060.53.0）')
+        self.title('Colbase検索・一括ダウンロードプログラム')
         self.geometry('600x430')
         self.resizable(0, 0)
 
@@ -92,7 +92,11 @@ class App(tk.Tk):
         dir = self.dir_var.get()
         if keyword and dir:
             self.download_button['state'] = tk.DISABLED
-            self.driver = webdriver.Chrome()
+            options = webdriver.ChromeOptions()
+            options.add_argument("disable-gpu")
+            if not self.show_var.get():
+                options.add_argument("headless")
+            self.driver = webdriver.Chrome(options=options)
             url_list = get_url_list(self.driver, keyword)
             self.prog_bar["maximum"] = len(url_list)
             output_dir = os.path.join(dir, keyword)
@@ -123,8 +127,8 @@ class App(tk.Tk):
         self.count_var.set(0)
         self.prog_bar = ttk.Progressbar(
             self.body,
-            mode = "determinate",
-            variable = self.count_var,
+            mode="determinate",
+            variable=self.count_var,
         )
         self.prog_bar.grid(column=0, row=0, sticky=tk.EW)
 
@@ -146,12 +150,24 @@ class App(tk.Tk):
         self.footer = ttk.Frame(self)
         # configure the grid
         self.footer.columnconfigure(0, weight=1)
+        self.footer.columnconfigure(1, weight=1)
+        
+        # headless checkbutton
+        self.show_var = tk.BooleanVar(value=True)
+        self.checkbutton_show = tk.Checkbutton(
+            self.footer,
+            text="ブラウザを表示",
+            variable=self.show_var,
+            onvalue=True, offvalue=False,
+        )
+        self.checkbutton_show.grid(column=0, row=0, sticky=tk.W)
+        
         # exit button
         self.exit_button = ttk.Button(self.footer,
                                       text='終了',
                                       command=self.destroy)
 
-        self.exit_button.grid(column=0, row=0, sticky=tk.E)
+        self.exit_button.grid(column=1, row=0, sticky=tk.E)
 
         # attach the footer frame
         self.footer.grid(column=0, row=2, sticky=tk.NSEW, padx=10, pady=10)
